@@ -1,40 +1,42 @@
 
 
-## 1 What I'm looking for (simple architecture concern):
-_It's not a full featured request, just basics need._
+## 1 What I have in mind for our needs (simple architecture concern):
+_It's not a full featured request, just basics need.
+It seems that most of the need can be done easily with tesseract_
+
 * **a serveur for planing that i can use in combination with behaviortree**
-      - that could be contenerised 
-      - that can be initialised by service/action call (loading urdf/srdf)
-      - that provide service/action for changing the scene an robot model (tool changing, add octomap from pcl)
+     <ins>Architectures</ins>
+      - That can initialize the scene (loading urdf/srdf) via service call
+      - That provide action/service for managing(CRUD) robot tool in the graph .
+      - That provide action/service for managing(CRUD) perrception data (octomap) in the scene graph .
+      - That could be contenerised (need to get the urdf mesh with ROS2 communication)
       - that provide action/service for feeding the program (waypoints/motion type) and another action/service for actual planning once program is feeded.
       - that will answer to plannification 
            -- with a ros trajectory_msg that can be send to a robot driver or displayed
-           -- or with an error and data about the error (could be partial plannifcation to know where is the failure)
+           -- or with an error and data about the error (could be partial plannifcation to know where/why is the failure)
       -- with the ability to plan with constant speed or variable programmed speed (evolving along the path)
      ? instruction profiles should be fixed in the server ? would be over flexible to modify it on the go with a request.
+
+<ins>Planning capabilities</ins>
  * Underconstrained planning
  * Underconstrained planning with 9 axis (graph based solution like descartes should explode cause too much IK solutions.)
  * Planning with tolerances (optimising a plan with orientation toleranced waypoint -- cf welding with process tolerance regarding orientation)
 
-## 2 small remarks on sword testing
-#### source ros2_wp/install/setup.bash lead to error in finding urdf mesh
-```
-[SWORD] No active license found: Cannot find license file. (-1,359:2 "No such file or directory")
-[SWORD] DEMO mode active. Application will exit in 15 minutes.
-<Exception> URDF: Error parsing file '[...]/src/description/cogniman_scene_description/urdf/robot.urdf'!
- URDF: Error parsing 'link' element for robot 'cogniman_robot'!
-  Link: Error parsing 'visual' element for link 'screw_gripper'!
-   Visual: Error parsing 'geometry' element!
-    Geometry: Failed parsing geometry type 'mesh'!
-     Mesh: Error importing meshes from filename: 'package://screw_gripper_description/mesh/visual/screw_gripper.stl'!
-: [...]/urdf/robot.urdf
-```
-**need to export ROS_PACKAGE_PATH**
+**<ins>Use case</ins>**
+1. 9 axis welding cell (gantry + 6axis) for welding 
+     - Underconstrained trajectories (Tool Z axis)
+2. on A GP7:
+     - Grasping of part 
+     - Program trajectories with part in hand and static tool
+3. Surfacing program on any surfaces for control with 6 axis robot:
+     - Use case for Unordered MoveInstruction?
 
-## 3 QUESTIONS/REMARKS ON SWORD:
+
+## 2 QUESTIONS/REMARKS ON SWORD:
 **Usefull for testing profile** with a planner pipe.
 **SRDF :** is it possible to import or export SRDF ?  
 is it possible to **import program serialised from tesseract?**
+
 
 ## 4 TRAINING: reflexion about content
 
@@ -50,6 +52,10 @@ is it possible to **import program serialised from tesseract?**
 * architecture and semantics: motion pipelinne, task, taskflow, profile, executor...
 
 * common profile with common task.
+     - SimpleMotionPlanning
+     - Time parametrisation task (see below)
+     - FT and CT denomination in the tasks
+     - ...
 
 * descripotion of the **different motion planner/Planning pipeline**
 
@@ -90,6 +96,18 @@ is it possible to **import program serialised from tesseract?**
 
  ![alt text](pictures/move_PROFILE.png)
 
+<ins>Why profile in both moveInstr and CompositeInstr ?</ins>
+there are profiles in Move instruction 
+```MoveInstruction(wp2, MoveInstructionType::LINEAR, process_profile);```
+there are profiles in CompositeInstruction:
+```CompositeInstruction raster_segment(process_profile);```
+
+### ANYPOLY
+I think I get the classic semantic pattern:
+<img src="pictures/classic_semantic.png" alt="drawing" width="500"/>
+
+I dont get the meaning of anypoly that seems to cast in different classes.
+
 ### EXECUTOR and TASKFLOW
 i'm not sure to get the diffrence between the taskflow and the executor.
 
@@ -97,7 +115,7 @@ i'm not sure to get the diffrence between the taskflow and the executor.
 
 here are the task _(request.name in the server)_:
 ![alt text](pictures/task_list.png)
-those task are different from motion_pipeline referenced in SWORD documentation...
+those task are different from motion_pipeline referenced in SWORD documentation.
 
 ![alt text](pictures/SWORD_planning_pipelines.png)
 
@@ -139,8 +157,9 @@ problem: no time in tesseract trajectory
 ```
 goal_msg.request.name = "RasterFtPipeline";
 ```
+
+Now, I've got traj timming, but only integer in tesseract_common::JointTrajectory.states.time
 ```
-I've got traj timming, but only integer in tesseract_common::JointTrajectory.states.time
 [WARN] approximate merit function got worse (-5.058e-01). (convexification is probably wrong to zeroth order)
 ```
 
@@ -160,11 +179,9 @@ Failed to find valid solution:  OPT_PENALTY_ITERATION_LIMIT
 i understand that trajopt reach iteration limit without solving the problem.
 
 
-* ??? in the pipelines name, when you've got XXXpipeline, like in RasterFTpipelines it means that it handles multiple composites instructions (like freespace - raster - freespace). And when there is no *pielines the it use a single planner.
+* ??? in the pipelines name, when you've got XXXpipeline, like in RasterFTpipelines it means that it handles multiple composites instructions (like freespace - raster - freespace). And when there is no *pipelines  it is a single planner (ie: without pipe between multiple planner).
 
 * ??? what is CT and FT (RasterXXpipelines for instance)
-
-* 
 
 * difference btw planInstruction and MoveInstruction
 
@@ -176,3 +193,4 @@ i understand that trajopt reach iteration limit without solving the problem.
 
 * a compositeInstruction can contain a compositeInstruction.
 * if ManipInfo is pecified in level0 it doesn't has to be redefined in lower levels of CI.
+* so when I declare waypoints in a MoveInstruction, the posiion is with respect to the base_link define in Manipulator Info (from the 'main' composite instruction).
