@@ -23,8 +23,10 @@ It seems that most of the need can be done easily with tesseract_
  * Planning with tolerances (optimising a plan with orientation toleranced waypoint -- cf welding with process tolerance regarding orientation)
 
 **<ins>Use case</ins>**
-1. 9 axis welding cell (gantry + 6axis) for welding 
-     - Underconstrained trajectories (Tool Z axis)
+1. 9 axis welding cell (gantry + 6axis) for welding :
+     - Underconstrained trajectories (Tool Z axis) with redundancies.
+     - Graph based planner (ie descartes) could explode (too much nodes) --> sparse descartes + trajopt seems to be the way.
+
 2. on A GP7:
      - Grasping of part 
      - Program trajectories with part in hand and static tool
@@ -72,16 +74,15 @@ is it possible to **import program serialised from tesseract?**
 * Planning server:
      - is it a viable way of using tesseract with ROS? (client not updated in the repo)
      - Get feedback on planning ? (if it failed, why ?) graph provide info for developers but not user friendly.
-
 * Modify scene graph (tool change, modify scene-> pop a part, pop a pcl (as voxel grid))
-
-* OPW IK overview
+* OPW IK quick overview
 * Planning for 9 axis (gantry + 6 axis)
-
 * study case on Cogniman Cell (with remote TCP planning)
 * Study case on 9 axis cell (gantry + 6 axis)
-
 * how to analyse the tesseract dotgraph
+* we can use **Instruction other than move**... I Understand the need if we use a post processor.  
+What if we use full ROS with a robot driver. I know how to send a trajectory to the robot. If i have a gripper as well I know how to operate it.
+But I will need a highlevel translator that will receiced instruction (traj or gripper I/O) and process them.
 
 ### Use case studies
 * **use case1:** A GP7 picking a part and  making a contact operation with fixed tool.
